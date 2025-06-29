@@ -1,0 +1,10 @@
+__pycache__/
+.env
+*.pyc
+*.pyo
+*.pyd
+poetry.lock
+*.sqlite3
+*.log
+*.csv
+.DS_Store
