@@ -10,26 +10,27 @@ import os  # For file-related errors
 logger = logging.getLogger(__name__)
 
 class VehiclePartImporter:
-    def __init__(self, bucket_name: str, s3_key: str, local_path: str):
+    def __init__(self, bucket_name: str, s3_key: str, local_path: str, s3_client: S3Client, csv_importer: callable):
         self.bucket_name = bucket_name
         self.s3_key = s3_key
         self.local_path = local_path
+        self.s3_client = s3_client
+        self.csv_importer = csv_importer
 
     def run_import(self):
         try:
             logger.info("Starting vehicle parts import...")
-            s3 = S3Client(self.bucket_name)
             
-            # Attempt to download the file from S3
+            # Use the injected S3 client
             try:
-                s3.download_file(self.s3_key, self.local_path)
+                self.s3_client.download_file(self.s3_key, self.local_path)
             except (BotoCoreError, ClientError) as e:
                 logger.error(f"Error downloading file from S3: {e}")
                 raise RuntimeError("Failed to download file from S3") from e
             
-            # Attempt to import the CSV file into the database
+            # Use the injected CSV importer
             try:
-                import_csv_to_db(self.local_path)
+                self.csv_importer(self.local_path)
             except (csv.Error, ValueError) as e:
                 logger.error(f"Error parsing CSV file: {e}")
                 raise RuntimeError("Failed to parse CSV file") from e
