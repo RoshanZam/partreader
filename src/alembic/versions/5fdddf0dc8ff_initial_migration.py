@@ -37,7 +37,7 @@ def downgrade() -> None:
     sa.Column('quantity', sa.INTEGER(), autoincrement=False, nullable=False),
     sa.Column('price', sa.DOUBLE_PRECISION(precision=53), autoincrement=False, nullable=False),
     sa.PrimaryKeyConstraint('id', name=op.f('vehicle_parts_pkey')),
-    sa.UniqueConstraint('part_number', name=op.f('vehicle_parts_part_number_key'), postgresql_include=[], postgresql_nulls_not_distinct=False)
+    sa.UniqueConstraint('part_number', name=op.f('vehicle_parts_part_number_key'))
     )
     op.create_index(op.f('ix_vehicle_parts_id'), 'vehicle_parts', ['id'], unique=False)
     # ### end Alembic commands ###

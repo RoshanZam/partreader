@@ -11,27 +11,26 @@ import logging
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Dependency injection functions
-def get_s3_client() -> S3Client:
-    return S3Client(bucket_name=env.S3_BUCKET_NAME)
-
-def get_csv_importer() -> callable:
-    return import_csv_to_db
+# Dependency injection function for VehiclePartImporter
+def get_vehicle_part_importer(
+    s3_client: S3Client = Depends(lambda: S3Client(bucket_name=env.LOCALSTACK_S3_BUCKET_NAME)),
+    csv_importer: callable = Depends(lambda: import_csv_to_db)
+) -> VehiclePartImporter:
+    """Provide an instance of VehiclePartImporter with all dependencies injected."""
+    return VehiclePartImporter(
+        bucket_name=env.LOCALSTACK_S3_BUCKET_NAME,
+        s3_key="vehicle_parts.csv",
+        local_path=env.LOCAL_PATH,
+        s3_client=s3_client,
+        csv_importer=csv_importer
+    )
 
 @router.post("/import-vehicle-parts")
 def import_vehicle_parts(
-    s3_client: S3Client = Depends(get_s3_client),
-    csv_importer: callable = Depends(get_csv_importer)
+    importer: VehiclePartImporter = Depends(get_vehicle_part_importer)
 ):
     try:
-        # Pass the dependencies to the VehiclePartImporter
-        importer = VehiclePartImporter(
-            bucket_name=env.S3_BUCKET_NAME,
-            s3_key="vehicle_parts.csv",
-            local_path=env.LOCAL_PATH,
-            s3_client=s3_client,
-            csv_importer=csv_importer
-        )
+        # Run the import process
         importer.run_import()
         return {"message": RESPONSE_CODES["IMPORT_SUCCESS"]["detail"]}
     except FileNotFoundError as e:
