@@ -1,24 +1,22 @@
-import pytest
-from unittest.mock import patch
+from unittest.mock import MagicMock
 from csv_to_pg.services.import_service import VehiclePartImporter
 
-
-@patch("csv_to_pg.services.import_service.import_csv_to_db")
-@patch("csv_to_pg.services.import_service.S3Client")
-def test_run_import(mock_s3_client_class, mock_import_csv_to_db):
+def test_vehicle_part_importer_run_import():
     # Arrange
-    bucket_name = "test-bucket"
-    s3_key = "test.csv"
-    local_path = "test.csv"
+    mock_s3_client = MagicMock()
+    mock_csv_importer = MagicMock()
 
-    mock_s3_client_instance = mock_s3_client_class.return_value
-
-    importer = VehiclePartImporter(bucket_name, s3_key, local_path)
+    importer = VehiclePartImporter(
+        bucket_name="test-bucket",
+        s3_key="test-key",
+        local_path="/tmp/test-file",
+        s3_client=mock_s3_client,
+        csv_importer=mock_csv_importer
+    )
 
     # Act
     importer.run_import()
 
     # Assert
-    mock_s3_client_class.assert_called_once_with(bucket_name)
-    mock_s3_client_instance.download_file.assert_called_once_with(s3_key, local_path)
-    mock_import_csv_to_db.assert_called_once_with(local_path)
+    mock_s3_client.download_file.assert_called_once_with("test-key", "/tmp/test-file")
+    mock_csv_importer.assert_called_once_with("/tmp/test-file")
