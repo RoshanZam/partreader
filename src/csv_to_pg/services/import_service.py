@@ -36,28 +36,33 @@ class VehiclePartImporter:
 
     def run_import(self):
         """
-        Run the import process: download the file from S3 and import its contents into the database.
+        Run the import process: download the file from S3 (if not already present)
+        and import its contents into the database.
         """
         try:
             logger.info("Starting vehicle parts import...")
 
-            # Use the injected S3 client to download the file
-            try:
-                logger.info(f"Downloading {self.s3_key} from bucket {self.bucket_name} to {self.local_path}")
-                self.s3_client.download_file(self.s3_key, self.local_path)
-            except (BotoCoreError, ClientError) as e:
-                logger.error(f"Error downloading file from S3: {e}")
-                raise RuntimeError("Failed to download file from S3") from e
+            # Check if the file already exists locally
+            if os.path.exists(self.local_path):
+                logger.info(f"File already exists locally: {self.local_path}. Skipping download.")
+            else:
+                # Download the file from S3
+                try:
+                    logger.info(f"Downloading {self.s3_key} from bucket {self.bucket_name} to {self.local_path}")
+                    self.s3_client.download_file(self.s3_key, self.local_path)
+                except (BotoCoreError, ClientError) as e:
+                    logger.error(f"Error downloading file from S3: {e}")
+                    raise RuntimeError("Failed to download file from S3") from e
 
-            # Use the injected CSV importer to process the file
+            # Import the CSV data into the database
             try:
                 logger.info(f"Importing data from {self.local_path}")
-                self.csv_importer(self.local_path)
+                rows_added, skipped_rows = self.csv_importer(self.local_path)
+                logger.info(f"Import completed. Rows added: {rows_added}, Rows skipped: {skipped_rows}")
+                return {"rows_added": rows_added, "rows_skipped": skipped_rows}
             except (csv.Error, ValueError) as e:
                 logger.error(f"Error parsing CSV file: {e}")
                 raise RuntimeError("Failed to parse CSV file") from e
-
-            logger.info("Vehicle parts import completed successfully.")
 
         except FileNotFoundError as e:
             logger.error(f"Local file not found: {e}")

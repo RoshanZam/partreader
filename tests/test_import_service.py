@@ -4,7 +4,7 @@ from csv_to_pg.services.import_service import VehiclePartImporter
 def test_vehicle_part_importer_run_import():
     # Arrange
     mock_s3_client = MagicMock()
-    mock_csv_importer = MagicMock()
+    mock_csv_importer = MagicMock(return_value=(100, 20))  # Mock returns rows_added and skipped_rows
 
     importer = VehiclePartImporter(
         bucket_name="test-bucket",
@@ -15,8 +15,9 @@ def test_vehicle_part_importer_run_import():
     )
 
     # Act
-    importer.run_import()
+    result = importer.run_import()
 
     # Assert
+    assert result == {"rows_added": 100, "rows_skipped": 20}
     mock_s3_client.download_file.assert_called_once_with("test-key", "/tmp/test-file")
     mock_csv_importer.assert_called_once_with("/tmp/test-file")

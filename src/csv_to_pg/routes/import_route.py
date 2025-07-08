@@ -31,8 +31,12 @@ def import_vehicle_parts(
 ):
     try:
         # Run the import process
-        importer.run_import()
-        return {"message": RESPONSE_CODES["IMPORT_SUCCESS"]["detail"]}
+        result = importer.run_import()
+        return {
+            "message": RESPONSE_CODES["IMPORT_SUCCESS"]["detail"],
+            "rows_added": result["rows_added"],
+            "rows_skipped": result["rows_skipped"]
+        }
     except FileNotFoundError as e:
         logger.error(f"File not found: {e}")
         raise HTTPException(**RESPONSE_CODES["FILE_NOT_FOUND"])
